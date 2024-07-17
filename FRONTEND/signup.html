@@ -22,7 +22,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-    <!--<script type="module" src="index.js"></script>-->
+    <script type="module" src="index.js"></script>
 
     <style>
         
@@ -34,7 +34,7 @@
         <nav class="navbar navbar-expand-lg bg-body-tertiary">
             <div class="container-fluid">
               <a class="navbar-brand" href="http://localhost:5500/FRONTEND/signup.html">
-                <img src="./public/Expense Icon.png" alt="Logo" width="10%" height="10%" class="img-fluid rounded mt-1">
+                <img src="./public/Expense Icon.png" alt="Expense Tracker" width="10%" height="10%" class="img-fluid rounded mt-1">
                 <p class="fs-4 fw-bold text-light d-inline-block align-text-top m-1">Expense Tracker</p>
               </a>
               <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,22 @@
               </div>
             </div>
           </nav>
+    </div>
+    <!--Show Results with Toast-->
+    <div class="container mt-5">
+      <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header">
+              <img src="./public/Expense Icon.png" class="rounded me-2" alt="Expense Tracker" width="20%" height="20%" />
+              <strong class="me-auto">Expense Tracker</strong>
+              <!--<small>11 mins ago</small>-->
+              <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+          <div class="toast-body">
+                
+          </div>
+        </div>
+      </div>
     </div>
     <!--Create Account Text-->
     <div class="container-fluid mt-5">
@@ -72,14 +88,14 @@
             <div class="col-sm-0 col-4"></div>
             <div class="col-sm-4 col-12">
               <label for="password" class="form-label fs-6 fw-semibold">Password</label>
-              <input type="password" class="form-control form-control-sm" id="password" placeholder="********" required />
+              <input type="password" class="form-control form-control-sm" id="password" placeholder="********" minlength="8" maxlength="15" required />
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-sm-0 col-4"></div>
             <div class="col-sm-4 col-12">
               <label for="confirmPassword" class="form-label fs-6 fw-semibold">Confirm Password</label>
-              <input type="password" class="form-control form-control-sm" id="confirmPassword" placeholder="********" required />
+              <input type="password" class="form-control form-control-sm" id="confirmPassword" placeholder="********" minlength="8" maxlength="15" required />
             </div>
           </div>
           <div class="row my-4"> <!--class="d-grid gap-2 col-4 mx-auto"-->
