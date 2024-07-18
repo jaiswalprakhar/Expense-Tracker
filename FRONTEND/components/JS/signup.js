@@ -23,8 +23,8 @@ export const handleSignupSubmit = (event) => {
       emailId: emailId,
       password: password,
     };
-    event.target.reset();
     createUser(myobj);
+    event.target.reset();
   }
 };
 
