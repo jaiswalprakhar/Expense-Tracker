@@ -21,7 +21,7 @@ export const handleSignupSubmit = (event) => {
     const myobj = {
       fullName: fullName,
       emailId: emailId,
-      password: password,
+      password: password
     };
     createUser(myobj);
     event.target.reset();

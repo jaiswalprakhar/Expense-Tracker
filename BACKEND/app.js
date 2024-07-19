@@ -16,6 +16,12 @@ app.use(express.json());
 
 app.use('/user', userRoutes);
 
+//Error Handle for throwing errors manually
+/*app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send({ message: err.message });
+  });*/
+
 app.use(errorController.get404);
 
 sequelize.sync()

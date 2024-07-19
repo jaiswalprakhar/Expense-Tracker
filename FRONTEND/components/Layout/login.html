@@ -22,7 +22,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-    <!--<script type="module" src="../JS/index.js"></script>-->
+    <script type="module" src="../JS/index.js"></script>
 
     <style>
         
@@ -80,7 +80,14 @@
           <div class="row mb-3">
             <div class="col-sm-0 col-4"></div>
             <div class="col-sm-4 col-12">
-              <label for="password" class="form-label fs-6 fw-semibold">Password</label>
+                <div class="row">
+                    <div class="col-6">
+                        <label for="password" class="form-label fs-6 fw-semibold">Password</label>
+                    </div>
+                    <div class="col-6 text-end">
+                        <a href="#" class="link fs-6 fw-semibold">Forgot password?</a>
+                    </div>
+                </div>
               <input type="password" class="form-control form-control-sm" id="password" placeholder="********" minlength="8" maxlength="15" required />
             </div>
           </div>
@@ -99,7 +106,7 @@
         <div class="col-sm-0 col-4"></div>
         <div class="col-sm-4 col-12 text-center">
           <p class="fs-6 fw-light d-inline-block">Don't have an account?</p>
-          <a href="http://localhost:5500/FRONTEND/components/Layout/signup.html" class="link">Create here</a>
+          <a href="http://localhost:5500/FRONTEND/components/Layout/signup.html" class="link fs-6 fw-semibold">Create here</a>
         </div>
       </div>
     </div>
