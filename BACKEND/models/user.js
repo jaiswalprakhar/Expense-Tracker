@@ -32,13 +32,13 @@ const User = sequelize.define('user', {
     },
     password: {
         type: Sequelize.STRING,
-        validate: {
+        /*validate: {
             customValidator(value) {
                 if(value.length < 8 || value.length > 15) {
                   throw new Error('Password should be 8 to 10 characters long');
                 }
             }
-        }
+        }*/
     }
 });
 

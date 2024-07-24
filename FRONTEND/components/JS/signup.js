@@ -34,7 +34,14 @@ const createUser = (obj) => {
         showToastResult(response.data.message);
     })
     .catch((err) => {
-        showToastResult(err.response.data.errors[0].message);
-        console.log(err);
+      console.log(err);
+      if(err.response.data.errMessage !== "Password should be 8 to 10 characters long")
+      {
+        showToastResult(err.response.data.err.errors[0].message);
+      }
+      else  
+      {
+        showToastResult(err.response.data.errMessage);
+      } 
     })
 }

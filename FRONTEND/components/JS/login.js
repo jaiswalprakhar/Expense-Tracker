@@ -25,6 +25,10 @@ const loginUser = (obj) => {
     axios.post("http://localhost:3000/user/login-user", obj)
     .then((response) => {
         showToastResult(response.data.message);
+        if(response.data.redirect)
+        {
+            window.location.href = response.data.redirect;
+        }
     })
     .catch((err) => {
         console.log(err);

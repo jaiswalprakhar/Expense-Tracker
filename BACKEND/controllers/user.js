@@ -1,36 +1,62 @@
 const User = require('../models/user');
+const { generatePasswordHash, verifyPassword } = require('../util/pwdUtil');
 
 exports.createUser = async (req, res) => {
+    const { fullName, emailId, password } = req.body;
     try {
-        const { fullName, emailId, password } = req.body;
+        if(password.length < 8 || password.length > 15) {
+            throw new Error('Password should be 8 to 10 characters long');
+        }
+        const userPassword = await generatePasswordHash(password);
         const createUserData = await User.create({
             fullName: fullName,
             emailId: emailId,
-            password: password
+            password: userPassword
         })
-        res.status(201).json({
-            message: `Your account is successfully created. Go to login page.`,
-            createdUserData: createUserData
-        });
+        if(createUserData)  {
+            res.status(201).json({
+                message: `Your account is successfully created. Go to login page.`,
+                createdUserData: createUserData
+            });
+        }
+        /*const saltrounds = 10;
+        bcrypt.hash(password, saltrounds, async (err, hash) => {
+            if(!err) {
+                const createUserData = await User.create({
+                    fullName: fullName,
+                    emailId: emailId,
+                    password: hash
+                })
+                res.status(201).json({
+                    message: `Your account is successfully created. Go to login page.`,
+                    createdUserData: createUserData
+                });
+            }
+        })*/
     }
     catch(err) {
         console.log(err);
-        res.status(500).json(err);
+        //console.log(err.message)
+        res.status(500).json({ err: err,
+            errMessage: err.message
+         });
     }
 };
 
 exports.loginUser = async (req, res, next) => {
+    const { emailId, password } = req.body;
     try {
-        const { emailId, password } = req.body;
-        const loginUserData = await User.findOne({where: { emailId: emailId }});
-        //console.log(loginUserData.emailId, loginUserData.password);
+        const loginUserData = await User.findOne({ where: { emailId: emailId } });
         if(loginUserData)   {
-            if(password === loginUserData.password)  {
+            const passwordVerified = await verifyPassword(password, loginUserData.password);
+            //if(password === loginUserData.password)  {    //Matching when Password Hashing not implemented
+              if(passwordVerified)  {
                 message = `Login Successful`;
                 console.log(message);
                 res.status(200).json({
                     message: message,
-                    loginUserData: loginUserData
+                    loginUserData: loginUserData,
+                    redirect: `http://localhost:5500/FRONTEND/components/Layout/expenses.html?id=${loginUserData.id}`
                 });
             }
             else  {
@@ -54,8 +80,8 @@ exports.loginUser = async (req, res, next) => {
     }
     catch(err) {
         console.log(err);
-        //res.status(500).json({err: err}); 
-        next(err);
+        res.status(500).json({err: err}); 
+       // next(err);
     }
 };
 
