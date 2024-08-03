@@ -1,19 +1,11 @@
 const User = require('../models/user');
 const Expense = require('../models/expense');
+const { generateAccessToken } = require('../util/jwtUtil');
 
 exports.getExpenses = async (req, res, next) => {
-    const { userId } =  req.query;
     try {
-        const user = await User.findByPk(userId);
-        if(user) {
-            req.user = user;
-        }
-        else {
-            err = 'User Not Found';
-            throw new Error(err);
-        }
         const userExpense = await req.user.getExpenses();
-        //console.log(userExpense.length);
+        //console.log(req.user.isPremiumUser)
         if(userExpense.length > 0) {
             message = 'Expenses Fetched';
         }
@@ -22,7 +14,8 @@ exports.getExpenses = async (req, res, next) => {
         }
         res.status(200).json({
             message: message,
-            userExpenses: userExpense
+            userExpenses: userExpense,
+            isPremiumUser: req.user.isPremiumUser
         });
     }
     catch(err) {
@@ -36,16 +29,8 @@ exports.postExpense = async (req, res, next) => {
     const amount = req.body.amount;
     const description = req.body.description;
     const category = req.body.category;
-    const { userId } =  req.query;
 
     try {
-        const user = await User.findByPk(userId);
-        if(user) {
-            req.user = user;
-        }
-        else {
-            throw new Error('User Not Found');
-        }
         const expenseData = await req.user.createExpense({
             amount: amount,
             description: description,
@@ -54,26 +39,27 @@ exports.postExpense = async (req, res, next) => {
         if(expenseData) {
             res.status(201).json({
                 message: 'Expense Added',
-                newExpense: expenseData
+                newExpense: expenseData,
+                isPremiumUser: req.user.isPremiumUser
             });
         }
     }
     catch(err) {
-        console.log(err.message);
-        next(err);
-        //res.status(500).json({ errorMessage: err});
+        console.log(err);
+        //next(err);
+        res.status(500).json({ err: err});
     }
 }
 
 exports.deleteExpense = async (req, res) => {
-    const { expenseId } =  req.query;
+    const expenseId =  req.params.id;
     try {
         const result = await Expense.destroy({ where: { id: expenseId } });
         if(result) {
-            res.status(200).json( {message: `${expenseId} expense Deleted`} );
+            res.status(200).json( {message: `ExpenseId ${expenseId} expense Deleted`} );
         }
         else {
-            res.status(404).json({ message: `${expenseId} No such expense present` });
+            res.status(404).json({ message: `ExpenseId ${expenseId} not present` });
         }
     }
     catch(err)  {
@@ -83,15 +69,8 @@ exports.deleteExpense = async (req, res) => {
 }
 
 exports.getEditExpense = async (req, res, next) => {
-    const { userId, expenseId } =  req.query;
+    const expenseId =  req.params.id;
     try {
-        const user = await User.findByPk(userId);
-        if(user) {
-            req.user = user;
-        }
-        else {
-            throw new Error('User Not Found');
-        }
         const expenseData = await req.user.getExpenses({ where: { id: expenseId } });
         //console.log(expenseData.length, expenseData);
         if(expenseData.length > 0)  {
@@ -112,7 +91,7 @@ exports.getEditExpense = async (req, res, next) => {
 }
 
 exports.postEditExpense = async (req, res) => {
-    const { expenseId } =  req.query;
+    const expenseId =  req.params.id;
     try {
         const updatedAmount = req.body.amount;
         const updatedDescription = req.body.description;

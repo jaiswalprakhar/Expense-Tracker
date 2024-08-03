@@ -1,5 +1,6 @@
 const User = require('../models/user');
 const { generatePasswordHash, verifyPassword } = require('../util/pwdUtil');
+const { generateAccessToken } = require('../util/jwtUtil');
 
 exports.createUser = async (req, res) => {
     const { fullName, emailId, password } = req.body;
@@ -11,7 +12,8 @@ exports.createUser = async (req, res) => {
         const createUserData = await User.create({
             fullName: fullName,
             emailId: emailId,
-            password: userPassword
+            password: userPassword,
+            isPremiumUser: false
         })
         if(createUserData)  {
             res.status(201).json({
@@ -51,12 +53,14 @@ exports.loginUser = async (req, res, next) => {
             const passwordVerified = await verifyPassword(password, loginUserData.password);
             //if(password === loginUserData.password)  {    //Matching when Password Hashing not implemented
               if(passwordVerified)  {
+                const token = generateAccessToken(loginUserData.id, loginUserData.fullName);
                 message = `Login Successful`;
                 console.log(message);
                 res.status(200).json({
                     message: message,
-                    loginUserData: loginUserData,
-                    redirect: `http://localhost:5500/FRONTEND/components/Layout/expenses.html?id=${loginUserData.id}`
+                    //loginUserData: loginUserData,
+                    redirect: `http://localhost:5500/FRONTEND/components/Layout/expenses.html`,
+                    token: token
                 });
             }
             else  {
@@ -84,4 +88,3 @@ exports.loginUser = async (req, res, next) => {
        // next(err);
     }
 };
-

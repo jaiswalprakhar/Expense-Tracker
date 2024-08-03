@@ -22,6 +22,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <script type="module" src="../JS/index.js"></script>
 
     <style>
@@ -31,7 +33,7 @@
   <body>
     <header></header>
     <!--Show Results with Toast-->
-    <div class="container mt-5">
+    <div class="container mt-3">
       <div class="toast-container position-fixed top-0 end-0 p-3">
         <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
           <div class="toast-header">
@@ -43,6 +45,19 @@
           <div class="toast-body">
                 
           </div>
+        </div>
+      </div>
+    </div>
+    <!--Premium Membership-->
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-8 col-sm-10"></div>
+        <div class="col-4 col-sm-2">
+          <form id="buyPremiumMembership">
+            <label>
+              <button type="button" class="btn btn-sm btn-success" id="buyPremiumMembershipBtn">Buy Premium Membership</button>
+            </label>
+          </form>
         </div>
       </div>
     </div>
@@ -87,7 +102,7 @@
               <button type="submit" class="btn btn-success" id="addExpense">Add Expense</button>
             </label>
             <label>
-              <button type="button" class="btn btn-danger" id="editExpense">Edit Expense</button>
+              <button type="button" class="btn btn-danger" id="editExpense" style="display: none;">Edit Expense</button>
             </label>
           </div>
         </div>

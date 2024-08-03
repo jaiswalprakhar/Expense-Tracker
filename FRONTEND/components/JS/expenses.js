@@ -6,6 +6,8 @@ const description = document.getElementById('description');
 const category = document.getElementById('category');
 const addButton = document.getElementById('addExpense');
 const editButton = document.getElementById('editExpense');
+const premiumParent = document.getElementById('buyPremiumMembership');
+const premiumButton = document.getElementById('buyPremiumMembershipBtn');
 
 const toastBody = document.getElementsByClassName('toast-body')[0];
 const toastLiveExample = document.getElementById('liveToast');
@@ -16,7 +18,7 @@ const showToastResult = (message) => {
     toastBootstrap.show();
 };
 
-// Get the current URL
+/*// Get the current URL
 const url = window.location.href;
 
 // Create a URL object
@@ -30,13 +32,18 @@ const userId = queryParams.get('id');
 const params = {};
 if(userId) {
     params.userId = userId;
-}
+}*/
 
 window.addEventListener("DOMContentLoaded", () => {
-    editButton.style.display = "none";
-    axios.get(`http://localhost:3000/expense/get-expense`, { params })
+    //editButton.style.display = "none";
+    const token = localStorage.getItem('token');
+    //axios.get(`http://localhost:3000/expense/get-expense`, { params })
+    axios.get(`http://localhost:3000/expense/get-expense`, { headers: {"Authorization": token} })
     .then((response) => {
-        console.log(response);
+        //console.log(response);
+        if(response.data.isPremiumUser) {
+            premiumButton.remove();
+        }
         if(response.data.userExpenses.length <= 0)
         {
             expenseList.style.display = "none";
@@ -54,7 +61,9 @@ window.addEventListener("DOMContentLoaded", () => {
     .catch((err) => {
         console.log(err);
         expenseList.style.display = "none";
+        window.location.href = err.response.data.redirect;
         showToastResult(err.response.data.err);
+
     })
 });
 
@@ -66,15 +75,16 @@ export const handleExpenseSubmit = (event) => {
         category: category.value
     }
 
-    console.log(userId);
     event.target.reset();
     createExpense(myobj);
 }
 
 const createExpense = (obj) => {
-    const url = new URL('http://localhost:3000/expense/create-expense');
+    /*const url = new URL('http://localhost:3000/expense/create-expense');
     url.searchParams.append('userId', userId);
-    axios.post(url.toString(), obj)
+    axios.post(url.toString(), obj)*/
+    const token = localStorage.getItem('token');
+    axios.post('http://localhost:3000/expense/create-expense', obj, { headers: {"Authorization": token} })
         .then((response) => {
             showExpenses(response.data.newExpense);
             showToastResult(response.data.message);
@@ -82,7 +92,7 @@ const createExpense = (obj) => {
         })
         .catch((err) => {
             console.log(err);
-            showToastResult(err.response.data.err);
+            showToastResult(err.response.data.err.errors[0].message);
         })
 }
 
@@ -99,10 +109,12 @@ const showExpenses = (expense) => {
 }
 
 window.deleteExpense = (expenseId) => {
-    if(expenseId)   {
+    /*if(expenseId)   {
         params.expenseId = expenseId;
     }
-    axios.delete(`http://localhost:3000/expense/delete-expense`, { params })
+    axios.delete(`http://localhost:3000/expense/delete-expense`, { params })*/
+    const token = localStorage.getItem('token');
+    axios.delete(`http://localhost:3000/expense/delete-expense/${expenseId}`, { headers: {"Authorization": token} })
     .then((response) => {
         removeExpense(expenseId);
         console.log(response.data.message);
@@ -123,10 +135,12 @@ const removeExpense = (expenseId) => {
 }
 
 window.getEditExpense = (expenseId) => {
-    if(expenseId)   {
+    /*if(expenseId)   {
         params.expenseId = expenseId;
     }
-    axios.get(`http://localhost:3000/expense/get-edit-expense`, { params }) 
+    axios.get(`http://localhost:3000/expense/get-edit-expense`, { params })*/
+    const token = localStorage.getItem('token');
+    axios.get(`http://localhost:3000/expense/get-edit-expense/${expenseId}`, { headers: {"Authorization": token} }) 
     .then((response) => {
         console.log(response.data.message);
         console.log(response.data.expense);
@@ -162,9 +176,11 @@ window.getEditExpense = (expenseId) => {
 }
 
 const postEditExpense = (expenseId, obj) => {
-    const url = new URL('http://localhost:3000/expense/post-edit-expense');
+    /*const url = new URL('http://localhost:3000/expense/post-edit-expense');
     url.searchParams.append('expenseId', expenseId);
-    axios.patch(url.toString(), obj)
+    axios.patch(url.toString(), obj)*/
+    const token = localStorage.getItem('token');
+    axios.patch(`http://localhost:3000/expense/post-edit-expense/${expenseId}`, obj, { headers: {"Authorization": token} })
         .then((response) => {
             showExpenses(response.data.editedExpense);
             console.log(response.data.message);
@@ -176,4 +192,40 @@ const postEditExpense = (expenseId, obj) => {
         })
         editButton.style.display = "none";
         addButton.style.display = "block";
+}
+
+export const handlePremiumUser = async (event) => {
+    const token = localStorage.getItem('token');
+    const response = await axios.get('http://localhost:3000/purchase/premium-membership', { headers: {"Authorization": token} });
+    const options = {
+        "key": response.data.key_id,
+        "order_id": response.data.order.id,
+        "handler": async function (response) {
+            console.log(response);
+            await axios.post('http://localhost:3000/purchase/update-transaction-status', {
+                order_id: options.order_id,
+                payment_id: response.razorpay_payment_id,
+                status: 'SUCCESS'
+            }, { headers: {"Authorization": token} })
+
+            premiumButton.remove();
+            showToastResult('You are now a premium user');
+        } 
+    }
+
+    const rzp1 = new Razorpay(options);
+    rzp1.open();
+    event.preventDefault();
+    
+    rzp1.on('payment.failed', async (response) => {
+        /*console.log(response);
+        console.log(response.error.metadata.order_id, response.error.metadata.payment_id);*/
+        await axios.post('http://localhost:3000/purchase/update-transaction-status', {
+            order_id: response.error.metadata.order_id,
+            payment_id: response.error.metadata.payment_id,
+            status: 'FAILED'
+        }, { headers: {"Authorization": token} })
+
+        showToastResult('Payment Issue');
+    })
 }
