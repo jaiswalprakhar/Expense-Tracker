@@ -53,7 +53,7 @@ exports.loginUser = async (req, res, next) => {
             const passwordVerified = await verifyPassword(password, loginUserData.password);
             //if(password === loginUserData.password)  {    //Matching when Password Hashing not implemented
               if(passwordVerified)  {
-                const token = generateAccessToken(loginUserData.id, loginUserData.fullName);
+                const token = generateAccessToken(loginUserData.id, loginUserData.fullName, loginUserData.isPremiumUser);
                 message = `Login Successful`;
                 console.log(message);
                 res.status(200).json({

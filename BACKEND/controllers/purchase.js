@@ -1,5 +1,6 @@
 const Razorpay = require('razorpay');
 const Order = require('../models/order');
+const { generateAccessToken } = require('../util/jwtUtil');
 
 exports.purchasePremium = async (req, res) => {
     try {
@@ -67,6 +68,7 @@ exports.updateTransactionStatus = async (req, res) => {
         console.log(err);
         res.status(403).json({ message: 'Something went wrong', err: err });
     }*/
+
     try {
         const { payment_id, order_id, status } = req.body;
         const order = await Order.findOne({ where: { orderid: order_id } });
@@ -79,8 +81,16 @@ exports.updateTransactionStatus = async (req, res) => {
             await req.user.update({ isPremiumUser: true });*/
             const updateOrderPromise = order.update({ paymentid: payment_id, status: 'SUCCESSFUL' });
             const updateUserPromise = req.user.update({ isPremiumUser: true });
-            await Promise.all([updateOrderPromise, updateUserPromise]);
-            return res.status(202).json({ success: true, message: "Transaction Successful" }); 
+            /*await Promise.all([updateOrderPromise, updateUserPromise]);
+            return res.status(202).json({ success: true, message: "Transaction Successful" });*/
+            console.log(`req.user.isPremiumUser = ${req.user.isPremiumUser}`)
+            Promise.all([updateOrderPromise, updateUserPromise])
+            .then(() => {
+                return res.status(202).json({ success: true, message: "Transaction Successful", token: generateAccessToken(req.user.id, req.user.fullName, req.user.isPremiumUser) });
+            })
+            .catch((err) => {
+                throw new Error(err);
+            })
         }
         else if(status === "FAILED")
         {

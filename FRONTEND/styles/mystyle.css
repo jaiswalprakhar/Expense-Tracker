@@ -44,3 +44,7 @@ a.link {
   font-weight: bold;
   color: #009879;
 }
+
+#leaderBoard-list {
+  display: none;
+}

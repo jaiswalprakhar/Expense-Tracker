@@ -5,7 +5,6 @@ const { generateAccessToken } = require('../util/jwtUtil');
 exports.getExpenses = async (req, res, next) => {
     try {
         const userExpense = await req.user.getExpenses();
-        //console.log(req.user.isPremiumUser)
         if(userExpense.length > 0) {
             message = 'Expenses Fetched';
         }
@@ -14,8 +13,7 @@ exports.getExpenses = async (req, res, next) => {
         }
         res.status(200).json({
             message: message,
-            userExpenses: userExpense,
-            isPremiumUser: req.user.isPremiumUser
+            userExpenses: userExpense
         });
     }
     catch(err) {

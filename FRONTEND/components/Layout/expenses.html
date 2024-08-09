@@ -50,13 +50,19 @@
     </div>
     <!--Premium Membership-->
     <div class="container-fluid">
-      <div class="row">
-        <div class="col-8 col-sm-10"></div>
-        <div class="col-4 col-sm-2">
+      <div class="row justify-content-end">
+        <div class="col-12 col-sm-8 col-md-6 col-lg-4">
           <form id="buyPremiumMembership">
-            <label>
-              <button type="button" class="btn btn-sm btn-success" id="buyPremiumMembershipBtn">Buy Premium Membership</button>
-            </label>
+            <div class="row">
+              <div class="col-6">
+                <p class="text-end fw-bold" id="buyPremiumMembershipTxt" style="color: #6610f2;"></p>
+              </div>
+              <div class="col-6" id="premiumBtnParent">
+                <label>
+                  <button type="button" class="btn btn-sm btn-success" id="buyPremiumMembershipBtn">Buy Premium Membership</button>
+                </label>
+              </div>
+            </div>
           </form>
         </div>
       </div>
@@ -125,6 +131,23 @@
             </tr>
           </thead>
           <tbody class="expense-table"></tbody>                  
+        </table>
+      </div>
+    </div>
+    <!--LeaderBoard-->
+    <div id="leaderBoard-list">
+      <div class="container mt-5">
+        <h4 class="text-center">Leader Board</h1>
+      </div>
+      <div class="table-responsive">
+        <table class="styled-table mx-2">
+          <thead>
+            <tr class="text-center">
+              <th scope="col" >Name</th>
+              <th scope="col">Total Expense</th>
+            </tr>
+          </thead>
+          <tbody class="leaderBoard-table"></tbody>                  
         </table>
       </div>
     </div>
