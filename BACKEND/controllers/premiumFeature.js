@@ -58,8 +58,8 @@ exports.getUserLeaderBoard = async (req, res) => {
         console.log(userLeaderBoardDetails);
         res.status(200).json(userLeaderBoardDetails);*/
 
-        //Optimised Using Joins(Also used in Production) -
-        const leaderBoardOfUsers = await User.findAll({
+        //Optimised Using Joins(One of the way which also used in Production) -
+        /*const leaderBoardOfUsers = await User.findAll({
             attributes: ['id', 'fullName', [sequelize.fn('sum', sequelize.col('expenses.amount')), 'total_cost'] ],
             include: [
                 {
@@ -70,6 +70,16 @@ exports.getUserLeaderBoard = async (req, res) => {
             group: ['user.id'],
             order: [['total_cost', 'DESC']]
         });
+        
+        res.status(200).json(leaderBoardOfUsers);*/
+
+        //More Optimised -
+        const leaderBoardOfUsers = await User.findAll({
+            attributes: ['fullName', 'totalExpenses'],
+            order: [['totalExpenses', 'DESC']]
+        });
+
+        //console.log(leaderBoardOfUsers)
         
         res.status(200).json(leaderBoardOfUsers);
     } 

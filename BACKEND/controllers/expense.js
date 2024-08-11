@@ -34,6 +34,13 @@ exports.postExpense = async (req, res, next) => {
             description: description,
             category: category
         })
+
+        const updatedAmount = Number(req.user.totalExpenses) + Number(amount);
+        if (updatedAmount !== undefined) {
+            req.user.totalExpenses = updatedAmount;
+            await req.user.save();
+        }
+
         if(expenseData) {
             res.status(201).json({
                 message: 'Expense Added',

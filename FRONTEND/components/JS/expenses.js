@@ -64,6 +64,7 @@ window.showLeaderBoard = async () => {
     const userLeaderBoardArray = await axios.get(`http://localhost:3000/premium/showLeaderBoard`, { headers: {"Authorization": token} });
     console.log(userLeaderBoardArray);
     
+    leaderBoardTable.innerHTML = "";
     userLeaderBoardArray.data.forEach((userDetails) => {
         showLeaderBoardData(userDetails);
     })
@@ -72,7 +73,7 @@ window.showLeaderBoard = async () => {
 const showLeaderBoardData = (userDetails) => {
     const childNode = `<tr class="text-center active-row">
                         <td>${userDetails.fullName}</td>
-                        <td>${userDetails.total_cost}</td>                        
+                        <td>${userDetails.totalExpenses}</td>                        
                        </tr>`;
     
     leaderBoardTable.innerHTML = leaderBoardTable.innerHTML + childNode;
@@ -149,6 +150,7 @@ const createExpense = (obj) => {
             showExpenses(response.data.newExpense);
             showToastResult(response.data.message);
             console.log(response.data.message);
+            leaderBoardList.style.display = "none";
             expenseList.style.display = "block";
         })
         .catch((err) => {
@@ -158,8 +160,8 @@ const createExpense = (obj) => {
 }
 
 const showExpenses = (expense) => {
+    //<th scope="row">${expense.id}</th>
     const childNode = `<tr id = ${expense.id} class="text-center active-row">
-                        <th scope="row">${expense.id}</th>
                         <td>${expense.amount}</td>
                         <td>${expense.description}</td>
                         <td>${expense.category}</td>
