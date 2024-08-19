@@ -11,6 +11,8 @@ const sequelize = require('./util/database');
 const User = require('./models/user');
 const Expense = require('./models/expense');
 const Order = require('./models/order');
+const ForgotPassword = require('./models/forgotPassword');
+
 const Port = process.env.PORT;
 
 const app = express();
@@ -21,6 +23,7 @@ const userRoutes = require('./routes/user');
 const expenseRoutes = require('./routes/expense');
 const purchaseRoutes = require('./routes/purchase');
 const premiumFeatureRoutes = require('./routes/premiumFeature');
+const forgotPasswordRoutes = require('./routes/forgotPassword');
 
 app.use(express.json());
 
@@ -28,6 +31,7 @@ app.use('/user', userRoutes);
 app.use('/expense', expenseRoutes);
 app.use('/purchase', purchaseRoutes);
 app.use('/premium', premiumFeatureRoutes);
+app.use('/password', forgotPasswordRoutes);
 
 //Error Handle for throwing errors manually
 app.use((err, req, res, next) => {
@@ -42,6 +46,9 @@ User.hasMany(Expense);
 
 User.hasMany(Order);
 Order.belongsTo(User);
+
+ForgotPassword.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
+User.hasMany(ForgotPassword);
 
 sequelize.sync()
 .then(result => {
