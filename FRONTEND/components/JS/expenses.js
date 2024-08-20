@@ -55,8 +55,28 @@ const showPremiumUserMsg = () => {
 }
 
 const leaderBoard = () => {
-    const childNode = `<button type="button" class="btn btn-sm btn-success" id="showLeaderBoardBtn" onclick=showLeaderBoard()>Show LeaderBoard</button>`;
+    const childNode = `<div class="row">
+                        <div class="col-6 col-sm-6 col-md-6 col-lg-6 col-xl-6 col-xxl-6">
+                            <button type="button" class="btn btn-sm btn-success" id="showLeaderBoardBtn" onclick="showLeaderBoard()">Show LeaderBoard</button>
+                        </div>
+                        <div class="col-6 col-sm-6 col-md-6 col-lg-6 col-xl-6 col-xxl-6 align-self-center">
+                            <button type="button" class="btn btn-sm btn-success" id="downloadExpense" onclick="downloadExpenseFile()">Download</button>
+                        </div>
+                    </div>`;
+
     premiumBtnParent.innerHTML += childNode;
+}
+
+const downloadExpenseFile = () => {
+    const token = localStorage.getItem('token');
+    axios.get('http://localhost:3000/', { headers: { "Authorization": token } })
+    .then((response) => {
+
+    })
+    .catch((err) =>{
+        console.log(err);
+        showToastResult(err.response.data.err);
+    })
 }
 
 window.showLeaderBoard = async () => {
