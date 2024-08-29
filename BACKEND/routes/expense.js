@@ -16,4 +16,6 @@ router.get('/get-edit-expense/:id', userAuthentication.authenticate, expenseCont
 
 router.patch('/post-edit-expense/:id', userAuthentication.authenticate, expenseController.postEditExpense);
 
+router.get('/download', userAuthentication.authenticate, expenseController.downloadExpense);
+
 module.exports = router;

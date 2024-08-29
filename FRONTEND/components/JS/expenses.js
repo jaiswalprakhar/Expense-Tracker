@@ -1,4 +1,4 @@
-const expenseTable = document.querySelector('.expense-table');
+    const expenseTable = document.querySelector('.expense-table');
 const expenseList = document.getElementById('expense-list');
 
 const amount = document.getElementById('amount');
@@ -12,6 +12,8 @@ const premiumBtnParent = document.getElementById('premiumBtnParent');
 const premiumBtn = document.getElementById('buyPremiumMembershipBtn');
 const leaderBoardList = document.getElementById('leaderBoard-list');
 const leaderBoardTable = document.getElementsByClassName('leaderBoard-table')[0];
+const downloadedFileList = document.getElementById('downloadedFile-list');
+const downloadedFileTable = document.getElementsByClassName('downloadedFile-table')[0];
 
 const toastBody = document.getElementsByClassName('toast-body')[0];
 const toastLiveExample = document.getElementById('liveToast');
@@ -67,11 +69,25 @@ const leaderBoard = () => {
     premiumBtnParent.innerHTML += childNode;
 }
 
-const downloadExpenseFile = () => {
+window.downloadExpenseFile = () => {
     const token = localStorage.getItem('token');
-    axios.get('http://localhost:3000/', { headers: { "Authorization": token } })
+    axios.get('http://localhost:3000/expense/download', { headers: { "Authorization": token } })
     .then((response) => {
-
+        if(response.status === 200) {
+            let a = document.createElement("a");
+            a.href = response.data.downloadedFileUrl;
+            a.download = 'myexpense.csv';
+            a.click();
+            
+            showDownloadedFiles(response.data);
+            leaderBoardList.style.display = "none";
+            expenseList.style.display = "block";
+            downloadedFileList.style.display = "block";
+            showToastResult('Downloaded Files Added');
+        }
+        else  {
+            throw new Error(err.response.data.err);
+        }
     })
     .catch((err) =>{
         console.log(err);
@@ -98,6 +114,7 @@ const showLeaderBoardData = (userDetails) => {
     
     leaderBoardTable.innerHTML = leaderBoardTable.innerHTML + childNode;
     expenseList.style.display = "none";
+    downloadedFileList.style.display = "none";
     leaderBoardList.style.display = "block";
 }
 
@@ -125,6 +142,7 @@ window.addEventListener("DOMContentLoaded", () => {
             if(isPremiumUser) {
                 showPremiumUserMsg();
             }
+
             if(response.data.userExpenses.length <= 0)
             {
                 expenseList.style.display = "none";
@@ -138,10 +156,23 @@ window.addEventListener("DOMContentLoaded", () => {
                     showToastResult(response.data.message);
                 }
             }
+
+            if(response.data.expenseFileData.length <= 0)
+            {
+                downloadedFileList.style.display = "none";
+            }
+            else  {
+                for(let i = 0; i < response.data.expenseFileData.length; i++)
+                {
+                    showDownloadedFiles(response.data.expenseFileData[i]);
+                    console.log('File Links Displayed');
+                }
+            }
         })
         .catch((err) => {
             console.log(err);
             expenseList.style.display = "none";
+            downloadedFileList.style.display = "none";
             showToastResult(err.response.data.err);
             window.location.href = err.response.data.redirect;
         })
@@ -172,6 +203,7 @@ const createExpense = (obj) => {
             console.log(response.data.message);
             leaderBoardList.style.display = "none";
             expenseList.style.display = "block";
+            downloadedFileList.style.display = "block";
         })
         .catch((err) => {
             console.log(err);
@@ -189,6 +221,14 @@ const showExpenses = (expense) => {
                         <button class="btn btn-success m-1" onclick = getEditExpense('${expense.id}') style="background-color: gray"> Edit </button></td>
                        </tr>`;
     expenseTable.innerHTML = expenseTable.innerHTML + childNode;
+}
+
+const showDownloadedFiles = (file) => {
+    const childNode = `<tr class="text-center active-row"">
+                        <td><a href="${file.downloadedFileUrl}">${file.downloadedFileUrl}</a></td>
+                       </tr>`;
+
+    downloadedFileTable.innerHTML = downloadedFileTable.innerHTML + childNode;
 }
 
 window.deleteExpense = (expenseId) => {

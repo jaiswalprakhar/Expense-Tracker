@@ -12,6 +12,7 @@ const User = require('./models/user');
 const Expense = require('./models/expense');
 const Order = require('./models/order');
 const ForgotPassword = require('./models/forgotPassword');
+const ExpenseFile = require('./models/expenseFile');
 
 const Port = process.env.PORT;
 
@@ -49,6 +50,9 @@ Order.belongsTo(User);
 
 ForgotPassword.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 User.hasMany(ForgotPassword);
+
+ExpenseFile.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
+User.hasMany(ExpenseFile);
 
 sequelize.sync()
 .then(result => {

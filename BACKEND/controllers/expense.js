@@ -2,10 +2,14 @@ const User = require('../models/user');
 const Expense = require('../models/expense');
 const { generateAccessToken } = require('../util/jwtUtil');
 const sequelize = require('../util/database');
+//const UserServices = require('../services/userServices');
+const S3Services = require('../services/s3Services');
 
 exports.getExpenses = async (req, res, next) => {
     try {
         const userExpense = await req.user.getExpenses();
+        const expenseFileData = await req.user.getExpenseFiles();
+        
         if(userExpense.length > 0) {
             message = 'Expenses Fetched';
         }
@@ -14,7 +18,8 @@ exports.getExpenses = async (req, res, next) => {
         }
         res.status(200).json({
             message: message,
-            userExpenses: userExpense
+            userExpenses: userExpense,
+            expenseFileData: expenseFileData
         });
     }
     catch(err) {
@@ -161,5 +166,42 @@ exports.postEditExpense = async (req, res) => {
         await t.rollback();
         console.log(err);
         res.status(500).json({err: err});
+    }
+}
+
+exports.downloadExpense = async (req, res) => {
+    try {
+        const premiumUser = req.user.isPremiumUser;
+        if(!premiumUser) {
+            return res.status(401).json({
+                err: 'User Not Authorised'
+            })
+        }
+        const expenses = await req.user.getExpenses();
+        const stringifiedExpenses = JSON.stringify(expenses);
+        console.log(expenses);
+        console.log(stringifiedExpenses);
+        const userId = req.user.id;
+        const fileName = `Expense${userId}/${new Date()}.txt`;
+        const fileURL = await S3Services.uploadToS3(stringifiedExpenses, fileName);
+
+        if(fileURL !== undefined || fileURL !== '') {
+            const dowloadedFileData = await req.user.createExpenseFile({
+                downloadedFileUrl: fileURL
+            })
+        }
+
+        res.status(200).json({ 
+            message: 'File Downloaded Successfully',
+            downloadedFileUrl: fileURL,
+            success: true });
+    }
+    catch(err) {
+        console.log(err);
+        res.status(500).json({
+            fileURL: '',
+            err: err,
+            success: false
+        })
     }
 }
