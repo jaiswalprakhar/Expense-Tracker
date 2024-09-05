@@ -1,4 +1,4 @@
-    const expenseTable = document.querySelector('.expense-table');
+const expenseTable = document.querySelector('.expense-table');
 const expenseList = document.getElementById('expense-list');
 
 const amount = document.getElementById('amount');
@@ -14,6 +14,7 @@ const leaderBoardList = document.getElementById('leaderBoard-list');
 const leaderBoardTable = document.getElementsByClassName('leaderBoard-table')[0];
 const downloadedFileList = document.getElementById('downloadedFile-list');
 const downloadedFileTable = document.getElementsByClassName('downloadedFile-table')[0];
+const pagination = document.getElementsByClassName('pagination')[0];
 
 const toastBody = document.getElementsByClassName('toast-body')[0];
 const toastLiveExample = document.getElementById('liveToast');
@@ -128,12 +129,49 @@ const parseJwt = (token) => {
     return JSON.parse(jsonPayload);
 }
 
+window.getExpenses = (page) => {
+    const token = localStorage.getItem('token');
+    axios.get(`http://localhost:3000/expense/get-expense?page=${page}`, { headers: {"Authorization": token} })
+    .then(({ data: { expenseFileData, userExpenses, ...pageData } }) =>{
+        showExpenses(userExpenses);
+        showPagination(pageData);
+    })
+    .catch((err) => {
+        console.log(err);
+    })
+}
+
+const showPagination = ({ currentPage, hasNextPage, nextPage, hasPreviousPage, previousPage, lastPage }) => {
+    pagination.innerHTML = '';
+
+    if(hasPreviousPage) {
+        const childNode =`<li class="page-item"><button type="button" class="page-link" onclick = getExpenses('${previousPage}')>${previousPage}</button></li>`;
+        pagination.innerHTML += childNode;
+    }
+
+    const childNode =`<li class="page-item"><button type="button" class="page-link" onclick = getExpenses('${currentPage}')>${currentPage}</button></li>`;
+    pagination.innerHTML += childNode;
+
+    if(hasNextPage) {
+        const childNode =`<li class="page-item"><button type="button" class="page-link" onclick = getExpenses('${nextPage}')>${nextPage}</button></li>`;
+        pagination.innerHTML += childNode;
+        /*const btn3 = document.createElement('button');
+        btn3.className = "page-link";
+        btn3.innerHTML = nextPage;
+        btn3.addEventListener('click', () => getExpenses(nextPage));
+        pagination.appendChild(btn3);*/
+    }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
-    //console.log(window.location.pathname);
     if (window.location.pathname === '/FRONTEND/components/Layout/expenses.html') {
         const token = localStorage.getItem('token');
+        const objUrlParams = new URLSearchParams(window.location.search);
+        const page = objUrlParams.get("page") || 1;
+
         //axios.get(`http://localhost:3000/expense/get-expense`, { params })
-        axios.get(`http://localhost:3000/expense/get-expense`, { headers: {"Authorization": token} })
+        //axios.get(`http://localhost:3000/expense/get-expense`, { headers: {"Authorization": token} })
+        axios.get(`http://localhost:3000/expense/get-expense?page=${page}`, { headers: {"Authorization": token} })
         .then((response) => {
             //console.log(response);
             const decodedToken = parseJwt(token);
@@ -141,20 +179,6 @@ window.addEventListener("DOMContentLoaded", () => {
             const isPremiumUser = decodedToken.isPremiumUser;
             if(isPremiumUser) {
                 showPremiumUserMsg();
-            }
-
-            if(response.data.userExpenses.length <= 0)
-            {
-                expenseList.style.display = "none";
-                showToastResult(response.data.message);
-            }
-            else  {
-                for(let i = 0; i < response.data.userExpenses.length; i++)
-                {
-                    showExpenses(response.data.userExpenses[i]);
-                    console.log(response.data.message);
-                    showToastResult(response.data.message);
-                }
             }
 
             if(response.data.expenseFileData.length <= 0)
@@ -167,6 +191,18 @@ window.addEventListener("DOMContentLoaded", () => {
                     showDownloadedFiles(response.data.expenseFileData[i]);
                     console.log('File Links Displayed');
                 }
+            }
+
+            if(response.data.userExpenses.length <= 0)
+            {
+                expenseList.style.display = "none";
+                showToastResult(response.data.message);
+            }
+            else  {
+                showExpenses(response.data.userExpenses);
+                console.log(response.data.message);
+                showToastResult(response.data.message);
+                showPagination(response.data);
             }
         })
         .catch((err) => {
@@ -198,7 +234,7 @@ const createExpense = (obj) => {
     const token = localStorage.getItem('token');
     axios.post('http://localhost:3000/expense/create-expense', obj, { headers: {"Authorization": token} })
         .then((response) => {
-            showExpenses(response.data.newExpense);
+            showExpenses([response.data.newExpense]);
             showToastResult(response.data.message);
             console.log(response.data.message);
             leaderBoardList.style.display = "none";
@@ -211,16 +247,18 @@ const createExpense = (obj) => {
         })
 }
 
-const showExpenses = (expense) => {
-    //<th scope="row">${expense.id}</th>
-    const childNode = `<tr id = ${expense.id} class="text-center active-row">
+const showExpenses = (expenses) => {
+    expenseTable.innerHTML = "";
+    expenses.forEach((expense) => {
+        const childNode = `<tr id = ${expense.id} class="text-center active-row">
                         <td>${expense.amount}</td>
                         <td>${expense.description}</td>
                         <td>${expense.category}</td>
                         <td><button class="btn btn-success m-1" onclick = deleteExpense('${expense.id}') style="background-color: #009879"> Delete </button>
                         <button class="btn btn-success m-1" onclick = getEditExpense('${expense.id}') style="background-color: gray"> Edit </button></td>
                        </tr>`;
-    expenseTable.innerHTML = expenseTable.innerHTML + childNode;
+        expenseTable.innerHTML = expenseTable.innerHTML + childNode;
+    })
 }
 
 const showDownloadedFiles = (file) => {

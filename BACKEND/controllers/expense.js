@@ -1,11 +1,61 @@
 const User = require('../models/user');
 const Expense = require('../models/expense');
+const ExpenseFile = require('../models/expenseFile');
 const { generateAccessToken } = require('../util/jwtUtil');
 const sequelize = require('../util/database');
 //const UserServices = require('../services/userServices');
 const S3Services = require('../services/s3Services');
 
+const ITEMS_PER_PAGE = 2;
+
 exports.getExpenses = async (req, res, next) => {
+    try {
+        const page = +req.query.page || 1;
+        const offset = (page - 1) * ITEMS_PER_PAGE;
+        const limit = ITEMS_PER_PAGE;
+
+        // Using Promises -
+        const totalItemsPromise = req.user.countExpenses();
+        
+        const userExpensePromise = Expense.findAll({
+            where: {
+                userId: req.user.id,
+            },
+            offset,
+            limit
+        });
+
+        const expenseFileDataPromise = req.user.getExpenseFiles();
+
+        const [totalItems, userExpense, expenseFileData] = await Promise.all([
+            totalItemsPromise,
+            userExpensePromise,
+            expenseFileDataPromise
+        ]);
+
+        const message = (userExpense.length > 0) ? 'Expenses Fetched' : 'No Expenses Present';
+
+        console.log(`totalItems = ${totalItems}`);
+        res.status(200).json({
+            message: message,
+            expenseFileData: expenseFileData,
+            userExpenses: userExpense,
+            currentPage: page,
+            hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+            nextPage: page + 1,
+            hasPreviousPage: page > 1,
+            previousPage: page - 1,
+            lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE),
+        });
+    }
+    catch(err) {
+        console.log(err.message);
+        next(err);
+        //res.status(500).json({ err: err });
+    }
+}
+
+/*exports.getExpenses = async (req, res, next) => {
     try {
         const userExpense = await req.user.getExpenses();
         const expenseFileData = await req.user.getExpenseFiles();
@@ -27,7 +77,7 @@ exports.getExpenses = async (req, res, next) => {
         next(err);
         //res.status(500).json({ err: err });
     }
-}
+}*/
 
 exports.postExpense = async (req, res, next) => {
     const t = await sequelize.transaction();
