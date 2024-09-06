@@ -6,17 +6,23 @@ const sequelize = require('../util/database');
 //const UserServices = require('../services/userServices');
 const S3Services = require('../services/s3Services');
 
-const ITEMS_PER_PAGE = 2;
-
 exports.getExpenses = async (req, res, next) => {
     try {
-        const page = +req.query.page || 1;
+        let page = +req.query.page;
+        const ITEMS_PER_PAGE = +req.query.range || 2;
+        //console.log(ITEMS_PER_PAGE);
+
+        const totalItems = await req.user.countExpenses();
+        //console.log(totalItems);
+
+        if((ITEMS_PER_PAGE * page) > totalItems) {
+            page = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        }
+
         const offset = (page - 1) * ITEMS_PER_PAGE;
         const limit = ITEMS_PER_PAGE;
 
         // Using Promises -
-        const totalItemsPromise = req.user.countExpenses();
-        
         const userExpensePromise = Expense.findAll({
             where: {
                 userId: req.user.id,
@@ -27,8 +33,7 @@ exports.getExpenses = async (req, res, next) => {
 
         const expenseFileDataPromise = req.user.getExpenseFiles();
 
-        const [totalItems, userExpense, expenseFileData] = await Promise.all([
-            totalItemsPromise,
+        const [userExpense, expenseFileData] = await Promise.all([
             userExpensePromise,
             expenseFileDataPromise
         ]);

@@ -129,10 +129,33 @@ const parseJwt = (token) => {
     return JSON.parse(jsonPayload);
 }
 
+let onPage;
+export const handleListRange = (event) => {
+    event.preventDefault();
+    const range = event.target.value;
+    
+    const myobj = {
+        listRange: range,
+    }
+
+    //const myobj_serialised = JSON.stringify(myobj.listRange);
+    localStorage.setItem("listRange", myobj.listRange);
+    //console.log(onPage || 1);
+    getExpenses(onPage);
+}
+
 window.getExpenses = (page) => {
     const token = localStorage.getItem('token');
-    axios.get(`http://localhost:3000/expense/get-expense?page=${page}`, { headers: {"Authorization": token} })
+    const listRange = localStorage.getItem('listRange');
+    //const parsedlistRange = JSON.parse(listRange);
+    //console.log(`${listRange}`, typeof(listRange));
+    axios.get(`http://localhost:3000/expense/get-expense?page=${page}&range=${listRange}`, { headers: {"Authorization": token} })
     .then(({ data: { expenseFileData, userExpenses, ...pageData } }) =>{
+        if(pageData.currentPage > pageData.lastPage) {
+            pageData.currentPage = pageData.lastPage;
+            pageData.previousPage = pageData.lastPage - 1;
+        }
+        //console.log(userExpenses, pageData);
         showExpenses(userExpenses);
         showPagination(pageData);
     })
@@ -142,6 +165,7 @@ window.getExpenses = (page) => {
 }
 
 const showPagination = ({ currentPage, hasNextPage, nextPage, hasPreviousPage, previousPage, lastPage }) => {
+    onPage = currentPage;
     pagination.innerHTML = '';
 
     if(hasPreviousPage) {
@@ -169,9 +193,12 @@ window.addEventListener("DOMContentLoaded", () => {
         const objUrlParams = new URLSearchParams(window.location.search);
         const page = objUrlParams.get("page") || 1;
 
+        const listRange = localStorage.getItem('listRange');
+        document.getElementById('listRange').value = listRange;
+
         //axios.get(`http://localhost:3000/expense/get-expense`, { params })
         //axios.get(`http://localhost:3000/expense/get-expense`, { headers: {"Authorization": token} })
-        axios.get(`http://localhost:3000/expense/get-expense?page=${page}`, { headers: {"Authorization": token} })
+        axios.get(`http://localhost:3000/expense/get-expense?page=${page}&range=${listRange}`, { headers: {"Authorization": token} })
         .then((response) => {
             //console.log(response);
             const decodedToken = parseJwt(token);
