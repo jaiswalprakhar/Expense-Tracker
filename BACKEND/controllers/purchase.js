@@ -28,7 +28,7 @@ exports.purchasePremium = async (req, res) => {
     }
 }
 
-exports.updateTransactionStatus = async (req, res) => {
+exports.updateTransactionStatus = async (req, res, next) => {
     /*try {
         const { payment_id, order_id, status } = req.body;
         //console.log(`payment id = ${payment_id}`);
@@ -73,7 +73,11 @@ exports.updateTransactionStatus = async (req, res) => {
         const { payment_id, order_id, status } = req.body;
         const order = await Order.findOne({ where: { orderid: order_id } });
         if(!order)  {
-            return res.status(404).json({ success: false, message: "Order not found" });
+            //return res.status(404).json({ success: false, message: "Order not found" });
+            const error = new Error('Order not found');
+            error.statusCode = 404;
+	        error.success = false;
+            throw error;
         }
         if(status === "SUCCESS")
         {
@@ -94,12 +98,19 @@ exports.updateTransactionStatus = async (req, res) => {
         }
         else if(status === "FAILED")
         {
-            await order.update({ paymentid: payment_id, status: 'FAILED' });
+            const orderStatusUpdated = await order.update({ paymentid: payment_id, status: 'FAILED' });
+            if(!orderStatusUpdated) {
+                const error = new Error('Order not updated, SOmething went wrong');
+                error.success = false;
+                throw error;
+            }
             return res.status(403).json({success: false, message: "Transaction Failed"});
         }
     }
     catch (err) {
+        /*console.log(err);
+        res.status(403).json({ message: 'Something went wrong', err: err });*/
         console.log(err);
-        res.status(403).json({ message: 'Something went wrong', err: err });
+        next(err);
     }
 }

@@ -35,13 +35,25 @@ const createUser = (obj) => {
     })
     .catch((err) => {
       console.log(err);
-      if(err.response.data.errMessage !== "Password should be 8 to 10 characters long")
+      if(err.response.status === 500) {
+        showToastResult("Something went wrong at Backend");
+      }
+      else  {
+        //showToastResult(err.response.data.message);
+        if(err.response.data.err.errors) {
+          showToastResult(err.response.data.err.errors[0].message);
+        }
+        else {
+          showToastResult(err.response.data.message);
+        }
+      }
+      /*if(err.response.data.errMessage !== "Password should be 8 to 10 characters long")
       {
         showToastResult(err.response.data.err.errors[0].message);
       }
       else  
       {
         showToastResult(err.response.data.errMessage);
-      } 
+      }*/
     })
 }

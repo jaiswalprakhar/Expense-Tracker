@@ -1,9 +1,12 @@
 const path = require('path');
 const dotenv = require('dotenv');
+const fs = require('fs');
 const express = require('express');
 dotenv.config({ path: './.env' });
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 
 const errorController = require("./controllers/error");
 const sequelize = require('./util/database');
@@ -14,7 +17,7 @@ const Order = require('./models/order');
 const ForgotPassword = require('./models/forgotPassword');
 const ExpenseFile = require('./models/expenseFile');
 
-const Port = process.env.PORT;
+const Port = process.env.PORT || 3000;
 
 const app = express();
 
@@ -26,6 +29,14 @@ const purchaseRoutes = require('./routes/purchase');
 const premiumFeatureRoutes = require('./routes/premiumFeature');
 const forgotPasswordRoutes = require('./routes/forgotPassword');
 
+const accessLogStream = fs.createWriteStream(
+    path.join(__dirname, 'access.log'),
+    { flags: 'a' }
+);
+
+app.use(helmet());
+app.use(morgan('combined', { stream: accessLogStream }));
+
 app.use(express.json());
 
 app.use('/user', userRoutes);
@@ -36,8 +47,15 @@ app.use('/password', forgotPasswordRoutes);
 
 //Error Handle for throwing errors manually
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ err: err.message });
+    //console.error(err.stack);
+    const statusCode = err.statusCode || 500;
+    //console.log(err.errors[0].type);
+
+    res.status(statusCode).json({ 
+        err: err,
+        message: err.message,
+        status: statusCode >= 400 && statusCode < 500 ? 'fail' : 'error',
+    });
   });
 
 app.use(errorController.get404);

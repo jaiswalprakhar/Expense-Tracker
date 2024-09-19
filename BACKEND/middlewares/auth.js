@@ -20,10 +20,10 @@ const authenticate = (req, res, next) => {
         console.log(err);
         if(err.message === "jwt must be provided")
         {
-            err.message = "User Not Authorised";
+            err.message = "User Not Authorised, Login Again";
         }
         return res.status(401).json({ 
-            err: err.message,
+            message: err.message,
             redirect: 'http://localhost:5500/FRONTEND/components/Layout/login.html'
         })
     }

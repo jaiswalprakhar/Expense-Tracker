@@ -84,27 +84,50 @@ window.downloadExpenseFile = () => {
             leaderBoardList.style.display = "none";
             expenseList.style.display = "block";
             downloadedFileList.style.display = "block";
-            showToastResult('Downloaded Files Added');
+            showToastResult(response.data.message);
         }
         else  {
-            throw new Error(err.response.data.err);
+            throw new Error(err.response.data.message);
         }
     })
     .catch((err) =>{
         console.log(err);
-        showToastResult(err.response.data.err);
+        //showToastResult(err.response.data.err);
+        if(err.response.status === 500) {
+            showToastResult("Something went wrong at Backend");
+        }
+        else  {
+            showToastResult(err.response.data.message);
+        }
     })
 }
 
 window.showLeaderBoard = async () => {
-    const token = localStorage.getItem('token');
-    const userLeaderBoardArray = await axios.get(`http://localhost:3000/premium/showLeaderBoard`, { headers: {"Authorization": token} });
-    console.log(userLeaderBoardArray);
-    
-    leaderBoardTable.innerHTML = "";
-    userLeaderBoardArray.data.forEach((userDetails) => {
-        showLeaderBoardData(userDetails);
-    })
+    try {
+        const token = localStorage.getItem('token');
+        const userLeaderBoardArray = await axios.get(`http://localhost:3000/premium/showLeaderBoard`, { headers: {"Authorization": token} });
+        console.log(userLeaderBoardArray);
+        
+        leaderBoardTable.innerHTML = "";
+        userLeaderBoardArray.data.forEach((userDetails) => {
+            showLeaderBoardData(userDetails);
+        })
+    }
+    catch(err) {
+        console.log(err);
+      if(err.response.status === 500) {
+        showToastResult("Something went wrong at Backend");
+      }
+      else  {
+        //showToastResult(err.response.data.message);
+        if(err.response.data.err.errors) {
+          showToastResult(err.response.data.err.errors[0].message);
+        }
+        else {
+          showToastResult(err.response.data.message);
+        }
+      }
+    }
 }
 
 const showLeaderBoardData = (userDetails) => {
@@ -161,6 +184,12 @@ window.getExpenses = (page) => {
     })
     .catch((err) => {
         console.log(err);
+        if(err.response.status === 500) {
+            showToastResult("Something went wrong at Backend");
+        }
+        else  {
+            showToastResult(err.response.data.message);
+        }
     })
 }
 
@@ -193,8 +222,13 @@ window.addEventListener("DOMContentLoaded", () => {
         const objUrlParams = new URLSearchParams(window.location.search);
         const page = objUrlParams.get("page") || 1;
 
-        const listRange = localStorage.getItem('listRange');
+        let listRange = localStorage.getItem('listRange');
+        if(!listRange)  {
+            localStorage.setItem("listRange", 5);
+            listRange = localStorage.getItem('listRange');
+        }
         document.getElementById('listRange').value = listRange;
+        console.log(listRange);
 
         //axios.get(`http://localhost:3000/expense/get-expense`, { params })
         //axios.get(`http://localhost:3000/expense/get-expense`, { headers: {"Authorization": token} })
@@ -236,8 +270,14 @@ window.addEventListener("DOMContentLoaded", () => {
             console.log(err);
             expenseList.style.display = "none";
             downloadedFileList.style.display = "none";
-            showToastResult(err.response.data.err);
-            window.location.href = err.response.data.redirect;
+            //showToastResult(err.response.data.err);
+            if(err.response.status === 500) {
+                showToastResult("Something went wrong at Backend");
+            }
+            else  {
+                showToastResult(err.response.data.message);
+            }
+            //window.location.href = err.response.data.redirect;
         })
     }
 });
@@ -266,11 +306,17 @@ const createExpense = (obj) => {
             console.log(response.data.message);
             leaderBoardList.style.display = "none";
             expenseList.style.display = "block";
-            downloadedFileList.style.display = "block";
+            //downloadedFileList.style.display = "block";
         })
         .catch((err) => {
             console.log(err);
-            showToastResult(err.response.data.err.errors[0].message);
+            //showToastResult(err.response.data.err.errors[0].message);
+            if(err.response.status === 500) {
+                showToastResult("Something went wrong at Backend");
+            }
+            else  {
+                showToastResult(err.response.data.message);
+            }
         })
 }
 
@@ -309,8 +355,14 @@ window.deleteExpense = (expenseId) => {
         showToastResult(response.data.message);
     })
     .catch((err) => {
-        console.log(err.response.data.err);
-        showToastResult(err.response.data.err);
+        console.log(err);
+        //showToastResult(err.response.data.err);
+        if(err.response.status === 500) {
+            showToastResult("Something went wrong at Backend");
+        }
+        else  {
+            showToastResult(err.response.data.message);
+        }
     })
 }
 
@@ -359,7 +411,13 @@ window.getEditExpense = (expenseId) => {
     })
     .catch((err) => {
         console.log(err);
-        showToastResult(err.response.data.err);
+        //showToastResult(err.response.data.err);
+        if(err.response.status === 500) {
+            showToastResult("Something went wrong at Backend");
+        }
+        else  {
+            showToastResult(err.response.data.message);
+        }
     })
 }
 
@@ -370,13 +428,19 @@ const postEditExpense = (expenseId, obj) => {
     const token = localStorage.getItem('token');
     axios.patch(`http://localhost:3000/expense/post-edit-expense/${expenseId}`, obj, { headers: {"Authorization": token} })
         .then((response) => {
-            showExpenses(response.data.editedExpense);
+            showExpenses([response.data.editedExpense]);
             console.log(response.data.message);
             showToastResult(response.data.message);
         })
         .catch((err) => {
             console.log(err);            
-            showToastResult(err.response.data.err.errors[0].message);
+            //showToastResult(err.response.data.err.errors[0].message);
+            if(err.response.status === 500) {
+                showToastResult("Something went wrong at Backend");
+            }
+            else  {
+                showToastResult(err.response.data.message);
+            }
         })
         editButton.style.display = "none";
         addButton.style.display = "block";

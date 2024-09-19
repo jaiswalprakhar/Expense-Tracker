@@ -3,58 +3,91 @@ const Expense = require('../models/expense');
 const ExpenseFile = require('../models/expenseFile');
 const { generateAccessToken } = require('../util/jwtUtil');
 const sequelize = require('../util/database');
-//const UserServices = require('../services/userServices');
+const UserServices = require('../services/userServices');
 const S3Services = require('../services/s3Services');
 
 exports.getExpenses = async (req, res, next) => {
     try {
-        let page = +req.query.page;
-        const ITEMS_PER_PAGE = +req.query.range || 2;
-        //console.log(ITEMS_PER_PAGE);
-
-        const totalItems = await req.user.countExpenses();
-        //console.log(totalItems);
-
-        if((ITEMS_PER_PAGE * page) > totalItems) {
-            page = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        //const totalItems = await req.user.countExpenses();
+        const totalItems = await UserServices.countExpensesData(req.user);
+        console.log(totalItems);
+        if(totalItems === undefined) {
+            throw new Error('Some Issue in the backend');
         }
 
-        const offset = (page - 1) * ITEMS_PER_PAGE;
-        const limit = ITEMS_PER_PAGE;
+        if(totalItems > 0)  {
+            let page = +req.query.page;
+            const ITEMS_PER_PAGE = +req.query.range || 5;
+            //console.log(ITEMS_PER_PAGE);
 
-        // Using Promises -
-        const userExpensePromise = Expense.findAll({
-            where: {
-                userId: req.user.id,
-            },
-            offset,
-            limit
-        });
+            if((ITEMS_PER_PAGE * page) > totalItems) {
+                page = Math.ceil(totalItems / ITEMS_PER_PAGE);
+            }
+    
+            const offset = (page - 1) * ITEMS_PER_PAGE;
+            const limit = ITEMS_PER_PAGE;
+    
+            // Using Promises -
+            /*const userExpensePromise = Expense.findAll({
+                where: {
+                    userId: req.user.id,
+                },
+                offset,
+                limit
+            });*/
 
-        const expenseFileDataPromise = req.user.getExpenseFiles();
+            const where = {
+                where: {
+                    userId: req.user.id,
+                },
+                offset,
+                limit
+            };
+            const howMany = 'All';
+            const userExpensePromise = UserServices.findData(Expense, howMany, where);
+    
+            //const expenseFileDataPromise = req.user.getExpenseFiles();
+            const expenseFileDataPromise = UserServices.getExpenseFilesData(req.user);
+    
+            const [userExpense, expenseFileData] = await Promise.all([
+                userExpensePromise,
+                expenseFileDataPromise
+            ]);
+            
+            //console.log(userExpense, expenseFileData);
 
-        const [userExpense, expenseFileData] = await Promise.all([
-            userExpensePromise,
-            expenseFileDataPromise
-        ]);
+            if(!userExpense || !expenseFileData) {
+                throw new Error('Unable to fetch Expenses or Expense File Data');
+            }
 
-        const message = (userExpense.length > 0) ? 'Expenses Fetched' : 'No Expenses Present';
+            //const message = (userExpense.length > 0) ? 'Expenses Fetched' : 'No Expenses Present';
+            const message = 'Expenses Fetched';
 
-        console.log(`totalItems = ${totalItems}`);
+            console.log(`totalItems = ${totalItems}`);
+            return res.status(200).json({
+                message: message,
+                expenseFileData: expenseFileData,
+                userExpenses: userExpense,
+                currentPage: page,
+                hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+                nextPage: page + 1,
+                hasPreviousPage: page > 1,
+                previousPage: page - 1,
+                lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE),
+            });
+        }
+
+        const expenseFileData = await req.user.getExpenseFiles();
+        const message = 'No Expenses Present';
+
         res.status(200).json({
             message: message,
             expenseFileData: expenseFileData,
-            userExpenses: userExpense,
-            currentPage: page,
-            hasNextPage: ITEMS_PER_PAGE * page < totalItems,
-            nextPage: page + 1,
-            hasPreviousPage: page > 1,
-            previousPage: page - 1,
-            lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE),
+            userExpenses: []
         });
     }
     catch(err) {
-        console.log(err.message);
+        console.log(err);
         next(err);
         //res.status(500).json({ err: err });
     }
@@ -91,16 +124,26 @@ exports.postExpense = async (req, res, next) => {
     const category = req.body.category;
 
     try {
-        const expenseData = await req.user.createExpense({
+        /*const expenseData = await req.user.createExpense({
             amount: amount,
             description: description,
             category: category
-        }, { transaction: t })
+        }, { transaction: t });*/
+
+        const userData = {
+            amount: amount,
+            description: description,
+            category: category
+        };
+
+        const expenseData = await UserServices.createData(req.user, userData, "createExpense", { transaction: t });
+        console.log(expenseData);
 
         const updatedAmount = Number(req.user.totalExpenses) + Number(amount);
         if (updatedAmount !== undefined) {
             req.user.totalExpenses = updatedAmount;
-            await req.user.save({ transaction: t });
+            //await req.user.save({ transaction: t });
+            await UserServices.saveData(req.user, { transaction: t });
         }
 
         await t.commit();
@@ -114,14 +157,14 @@ exports.postExpense = async (req, res, next) => {
         }
     }
     catch(err) {
-        await t.rollback();
         console.log(err);
-        //next(err);
-        res.status(500).json({ err: err});
+        await t.rollback();
+        next(err);
+        //res.status(500).json({ err: err});
     }
 }
 
-exports.deleteExpense = async (req, res) => {
+exports.deleteExpense = async (req, res, next) => {
     const t = await sequelize.transaction();
     const expenseId =  req.params.id;
     try {
@@ -129,36 +172,54 @@ exports.deleteExpense = async (req, res) => {
         //console.log(expense[0].dataValues.amount);
 
         //const result = await Expense.destroy({ where: { id: expenseId } }, { transaction: t });
-        const result = await expense[0].destroy({ transaction: t });
+        
+        if(!expense[0]) {
+            //res.status(404).json({ message: `ExpenseId ${expenseId} not present` });
+            const error = new Error(`ExpenseId ${expenseId} not present`);
+            error.statusCode = 404;
+            throw error;
+        }
+    
+        /*const result = await expense[0].destroy({ transaction: t });*/
+        const result = await UserServices.deleteData(expense[0], { transaction: t });
 
-        if(expense) {
+        let expenseSaved;
+        if(result) {
             const updatedAmount = req.user.totalExpenses - expense[0].dataValues.amount;
             if (updatedAmount !== undefined) {
                 req.user.totalExpenses = updatedAmount;
-                await req.user.save({ transaction: t });
+                //await req.user.save({ transaction: t });
+                //console.log(updatedAmount);
+                expenseSaved = await UserServices.saveData(req.user, { transaction: t });
+                console.log("Total Expense Data updated");             
             }
         }
 
-        if(result) {
+        if(expenseSaved)  {
+            //console.log(expenseSaved);
             await t.commit();
             res.status(200).json( {message: `ExpenseId ${expenseId} expense Deleted`} );
         }
-        else {
-            res.status(404).json({ message: `ExpenseId ${expenseId} not present` });
-        }
     }
     catch(err)  {
-        await t.rollback();
         console.log(err);
-        res.status(500).json({ err: err});
+        await t.rollback();
+        next(err);
     }
 }
 
 exports.getEditExpense = async (req, res, next) => {
     const expenseId =  req.params.id;
     try {
-        const expenseData = await req.user.getExpenses({ where: { id: expenseId } });
+        //const expenseData = await req.user.getExpenses({ where: { id: expenseId } });
+
+        const where = { where: { id: expenseId } };
+        const expenseData = await UserServices.getExpensesData(req.user, where);
+        if(!expenseData) {
+            throw new Error('Unable to fetch Expense');
+        }
         //console.log(expenseData.length, expenseData);
+
         if(expenseData.length > 0)  {
             res.status(200).json({
                 message: 'Auto Filling Expense into Form from db',
@@ -176,7 +237,7 @@ exports.getEditExpense = async (req, res, next) => {
     }
 }
 
-exports.postEditExpense = async (req, res) => {
+exports.postEditExpense = async (req, res, next) => {
     const t = await sequelize.transaction();
     const expenseId =  req.params.id;
     try {
@@ -185,11 +246,17 @@ exports.postEditExpense = async (req, res) => {
         const updatedCategory = req.body.category;
 
         //const expenseData = await Expense.findByPk(expenseId);
-        const expenseData = await req.user.getExpenses({ where: { id: expenseId } });
+        //const expenseData = await req.user.getExpenses({ where: { id: expenseId } });
+
+        const where = { where: { id: expenseId } };
+        const expenseData = await UserServices.getExpensesData(req.user, where);
 
         if (!expenseData[0]) {
-            console.log('Expense not found')
-            return res.status(404).json({ message: 'Expense not found' });
+            //console.log('Expense not found')
+            //return res.status(404).json({ message: 'Expense not found' });
+            const error = new Error(`ExpenseId ${expenseId} not found`);
+            error.statusCode = 404;
+            throw error;
         }
         
         if (updatedAmount !== undefined) {
@@ -204,12 +271,16 @@ exports.postEditExpense = async (req, res) => {
             expenseData[0].category = updatedCategory;
         }
         
-        await expenseData[0].save({ transaction: t });
+        //await expenseData[0].save({ transaction: t });
+        const savedExpenseData = await UserServices.saveData(expenseData[0], { transaction: t });
         console.log('Expense Data saved');
-
-        await req.user.save({ transaction: t });
+        
+        //await req.user.save({ transaction: t });
+        const savedTotalExpenseData = await UserServices.saveData(req.user, { transaction: t });
         console.log('Total Expenses Data saved');
-
+        
+        //console.log(savedExpenseData, savedTotalExpenseData);
+        
         await t.commit();
         
         res.status(200).json({
@@ -218,9 +289,9 @@ exports.postEditExpense = async (req, res) => {
         });
     }
     catch(err) {
-        await t.rollback();
         console.log(err);
-        res.status(500).json({err: err});
+        await t.rollback();
+        next(err);
     }
 }
 
@@ -229,7 +300,7 @@ exports.downloadExpense = async (req, res) => {
         const premiumUser = req.user.isPremiumUser;
         if(!premiumUser) {
             return res.status(401).json({
-                err: 'User Not Authorised'
+                message: 'User Not Authorised'
             })
         }
         const expenses = await req.user.getExpenses();
@@ -255,7 +326,7 @@ exports.downloadExpense = async (req, res) => {
         console.log(err);
         res.status(500).json({
             fileURL: '',
-            err: err,
+            message: err.message,
             success: false
         })
     }

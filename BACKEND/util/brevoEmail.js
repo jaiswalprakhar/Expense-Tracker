@@ -7,8 +7,8 @@ const transEmailApi = new Sib.TransactionalEmailsApi();
 
 const brevoEmail = async (receiverEmail, uuid) =>  {
     const sender = {
-        email: 'prakharpractice@gmail.com',
-        name: 'Prakhar'
+        email: process.env.BREVO_SENDER_EMAIL_ID,
+        name: process.env.BREVO_SENDER_NAME
     }
     
     const receivers = [

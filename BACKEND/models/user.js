@@ -14,10 +14,14 @@ const User = sequelize.define('user', {
         validate: {
             noNumbers(value) {
                 if (/\d/.test(value)) {
-                    throw new Error('Name should not contain numbers');
+                    //throw new Error('Name should not contain numbers');
+                    const error = new Error('Name should not contain numbers');
+                    throw error;
                 }
                 else if(value === "") {
-                  throw new Error('Name cannot be empty');
+                  //throw new Error('Name cannot be empty');
+                  const error = new Error('Name cannot be empty');
+                  throw error;
                 }
             }
         }
@@ -25,9 +29,15 @@ const User = sequelize.define('user', {
     emailId: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true,
+        unique: {
+            args: true,
+            msg: 'Email ID already exists'
+        },
         validate: {
-            isEmail: true
+            isEmail: {
+                args: true,
+                msg: 'Enter a valid Email Address'
+            }
         }
     },
     password: {

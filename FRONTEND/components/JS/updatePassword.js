@@ -35,6 +35,11 @@ const updatePassword = (obj) => {
     })
     .catch((err) => {
         console.log(err);
-        showToastResult(err.response.data.message);
+        if(err.response.status === 500) {
+            showToastResult("Something went wrong at Backend");
+          }
+          else  {
+            showToastResult(err.response.data.message);
+          }
     })
 }

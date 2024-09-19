@@ -32,7 +32,17 @@ const loginUser = (obj) => {
         }
     })
     .catch((err) => {
-        console.log(err);
-        showToastResult(err.response.data.message)
+      console.log(err);
+      if(err.response.status === 500) {
+        showToastResult("Something went wrong at Backend");
+      }
+      else  {
+        if(err.response.data.err.errors) {
+          showToastResult(err.response.data.err.errors[0].message);
+        }
+        else {
+          showToastResult(err.response.data.message);
+        }
+      }
     })
 }

@@ -1,8 +1,9 @@
 const User = require('../models/user');
 const Expense = require('../models/expense');
 const sequelize = require('../util/database');
+const UserServices = require('../services/userServices');
 
-exports.getUserLeaderBoard = async (req, res) => {
+exports.getUserLeaderBoard = async (req, res, next) => {
     try {
         //Non-Optimised -
         /*const users = await User.findAll();
@@ -74,17 +75,30 @@ exports.getUserLeaderBoard = async (req, res) => {
         res.status(200).json(leaderBoardOfUsers);*/
 
         //More Optimised -
-        const leaderBoardOfUsers = await User.findAll({
+        /*const leaderBoardOfUsers = await User.findAll({
             attributes: ['fullName', 'totalExpenses'],
             order: [['totalExpenses', 'DESC']]
-        });
+        });*/
 
-        //console.log(leaderBoardOfUsers)
+        const where = {
+            attributes: ['fullName', 'totalExpenses'],
+            order: [['totalExpenses', 'DESC']]
+        };
+        const howMany = 'All';
         
+        const leaderBoardOfUsers = await UserServices.findData(User, howMany, where)
+        if(!leaderBoardOfUsers) {
+            const error = new Error(`LeaderBoard's other users data not Found`);
+            error.statusCode = 404;
+            throw error;
+        }
+
+        console.log(leaderBoardOfUsers);
         res.status(200).json(leaderBoardOfUsers);
     } 
     catch (err) {
         console.log(err);
-        res.status(500).json(err);
+        //res.status(500).json(err);
+        next(err);
     }
 }
