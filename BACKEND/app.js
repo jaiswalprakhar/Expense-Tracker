@@ -55,6 +55,7 @@ app.use((err, req, res, next) => {
         err: err,
         message: err.message,
         status: statusCode >= 400 && statusCode < 500 ? 'fail' : 'error',
+        success: false
     });
   });
 

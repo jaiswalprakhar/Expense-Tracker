@@ -10,6 +10,7 @@ const authenticate = (req, res, next) => {
         User.findByPk(user.userId)
         .then(user => {
             req.user = user;
+            console.log("Token verified");
             next();
         })
         .catch(err => {
@@ -24,7 +25,8 @@ const authenticate = (req, res, next) => {
         }
         return res.status(401).json({ 
             message: err.message,
-            redirect: 'http://localhost:5500/FRONTEND/components/Layout/login.html'
+            redirect: 'http://localhost:5500/FRONTEND/components/Layout/login.html',
+            success: false
         })
     }
 }

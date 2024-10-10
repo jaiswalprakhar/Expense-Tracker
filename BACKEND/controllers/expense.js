@@ -2,6 +2,8 @@ const User = require('../models/user');
 const Expense = require('../models/expense');
 const ExpenseFile = require('../models/expenseFile');
 const { generateAccessToken } = require('../util/jwtUtil');
+const { generateHTML } = require('../util/expenseHTML');
+const { generatePDF } = require('../util/generatePDF');
 const sequelize = require('../util/database');
 const UserServices = require('../services/userServices');
 const S3Services = require('../services/s3Services');
@@ -74,6 +76,7 @@ exports.getExpenses = async (req, res, next) => {
                 hasPreviousPage: page > 1,
                 previousPage: page - 1,
                 lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE),
+                success: true
             });
         }
 
@@ -83,7 +86,8 @@ exports.getExpenses = async (req, res, next) => {
         res.status(200).json({
             message: message,
             expenseFileData: expenseFileData,
-            userExpenses: []
+            userExpenses: [],
+            success: true
         });
     }
     catch(err) {
@@ -152,13 +156,17 @@ exports.postExpense = async (req, res, next) => {
             res.status(201).json({
                 message: 'Expense Added',
                 newExpense: expenseData,
-                isPremiumUser: req.user.isPremiumUser
+                isPremiumUser: req.user.isPremiumUser,
+                success: true
             });
         }
     }
     catch(err) {
         console.log(err);
         await t.rollback();
+        if(err.name === 'SequelizeValidationError' || 'SequelizeUniqueConstraintError') {
+            err.statusCode = 400;
+        }
         next(err);
         //res.status(500).json({ err: err});
     }
@@ -198,7 +206,10 @@ exports.deleteExpense = async (req, res, next) => {
         if(expenseSaved)  {
             //console.log(expenseSaved);
             await t.commit();
-            res.status(200).json( {message: `ExpenseId ${expenseId} expense Deleted`} );
+            res.status(200).json({
+                message: `ExpenseId ${expenseId} expense Deleted`,
+                success: true
+            });
         }
     }
     catch(err)  {
@@ -223,11 +234,15 @@ exports.getEditExpense = async (req, res, next) => {
         if(expenseData.length > 0)  {
             res.status(200).json({
                 message: 'Auto Filling Expense into Form from db',
-                expense: expenseData[0]
+                expense: expenseData[0],
+                success: true
             });
         }
         else {
-            res.status(404).json({ message: `${expenseId} No such expense present` });   
+            res.status(404).json({ 
+                message: `${expenseId} No such expense present`,
+                success: true
+             });   
         }
     }
     catch(err) {
@@ -260,8 +275,7 @@ exports.postEditExpense = async (req, res, next) => {
         }
         
         if (updatedAmount !== undefined) {
-            req.user.totalExpenses = req.user.totalExpenses + (Number(updatedAmount) - expenseData[0].amount);
-            
+            req.user.totalExpenses = req.user.totalExpenses + (Number(updatedAmount) - expenseData[0].amount);            
             expenseData[0].amount = updatedAmount;
         }
         if (updatedDescription !== undefined) {
@@ -285,17 +299,21 @@ exports.postEditExpense = async (req, res, next) => {
         
         res.status(200).json({
             message: 'Expense Edited',
-            editedExpense: expenseData[0]
+            editedExpense: expenseData[0],
+            success: true
         });
     }
     catch(err) {
         console.log(err);
         await t.rollback();
+        if(err.name === 'SequelizeValidationError' || 'SequelizeUniqueConstraintError') {
+            err.statusCode = 400;
+        }
         next(err);
     }
 }
 
-exports.downloadExpense = async (req, res) => {
+/*exports.downloadExpense = async (req, res) => {
     try {
         const premiumUser = req.user.isPremiumUser;
         if(!premiumUser) {
@@ -329,5 +347,58 @@ exports.downloadExpense = async (req, res) => {
             message: err.message,
             success: false
         })
+    }
+}*/
+
+exports.downloadExpense = async (req, res, next) => {
+    try {
+        const premiumUser = req.user.isPremiumUser;
+        if(!premiumUser) {
+            const error = new Error(`User does not have a premium account`);
+            error.statusCode = 401;
+            throw error;
+        }
+        const where = {
+            attributes: ['id', 'amount', 'description', 'category', 'createdAt'],
+            order: [['createdAt', 'ASC']]
+        };
+        
+        const userExpensesData = await UserServices.getExpensesData(req.user, where);
+        
+        if(userExpensesData.length > 0) {
+            // Generate HTML-like structure
+            const htmlContent = generateHTML(userExpensesData);
+            console.log("HTML Content created");
+
+            // Generate PDF from HTML
+            const pdfBuffer = await generatePDF(htmlContent);
+            
+            // Upload PDF to S3
+            const fileName = `Expense${req.user.id}/${new Date()}.pdf`;
+            const fileURL = await S3Services.uploadToS3(pdfBuffer, fileName);
+
+            if(fileURL !== undefined || fileURL !== '') {
+                const dowloadedFileData = await req.user.createExpenseFile({
+                    downloadedFileUrl: fileURL
+                })
+            }
+
+            res.status(200).json({ 
+                message: 'File Downloaded Successfully',
+                downloadedFileUrl: fileURL,
+                expenses: userExpensesData,
+                success: true });
+        }
+        else {
+            res.status(204).json({
+                message: 'No Expenses Found, User cannot download the file',
+                expenses: userExpensesData,
+                success: true
+            })
+        }
+    }
+    catch(err) {
+        console.log(err);
+        next(err);
     }
 }

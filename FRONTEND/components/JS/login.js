@@ -7,6 +7,34 @@ const showToastResult = (message) => {
     toastBootstrap.show();
 };
 
+window.addEventListener("DOMContentLoaded", () => {
+  if (window.location.pathname === '/FRONTEND/components/Layout/login.html') {
+    const token = localStorage.getItem('token');
+    if(!token) {
+      console.log("User not Logged in");
+      return;
+    }
+
+    axios.get('http://localhost:3000/user/verify-login', { headers: {"Authorization": token} })
+      .then((response) => {
+          if(response.status == 200) {
+              console.log(response.data.message);
+              showToastResult(response.data.message);
+              window.location.href = response.data.redirect;
+          }
+      })
+      .catch((err) => {
+          console.log(err);
+          if(err.response.status === 500) {
+              showToastResult("Something went wrong at Backend");
+          }
+          else  {
+              showToastResult(err.response.data.message);
+          }
+      })
+  }
+});
+
 export const handleLoginSubmit = (event) => {
     event.preventDefault();
     const emailId = event.target.emailId.value;

@@ -10,7 +10,6 @@ exports.createUser = async (req, res, next) => {
             //throw new Error('Password should be 8 to 10 characters long');
             const error = new Error('Password should be 8 to 15 characters long');
             error.statusCode = 400;
-            error.success = false;
             throw error;
         }
         const userPassword = await generatePasswordHash(password);
@@ -31,7 +30,8 @@ exports.createUser = async (req, res, next) => {
         if(createUserData)  {
             res.status(201).json({
                 message: `Your account is successfully created. Go to login page.`,
-                createdUserData: createUserData
+                createdUserData: createUserData,
+                success: true
             });
         }
         /*const saltrounds = 10;
@@ -56,7 +56,6 @@ exports.createUser = async (req, res, next) => {
             //if(err.errors[0].type === 'Validation error') {
             if(err.name === 'SequelizeValidationError' || 'SequelizeUniqueConstraintError') {
                 err.statusCode = 400;
-                err.success = false;
             }
         //}
         next(err);
@@ -87,7 +86,8 @@ exports.loginUser = async (req, res, next) => {
                     message: message,
                     //loginUserData: loginUserData,
                     redirect: `http://localhost:5500/FRONTEND/components/Layout/expenses.html`,
-                    token: token
+                    token: token,
+                    success: true
                 });
             }
             else  {
@@ -98,7 +98,6 @@ exports.loginUser = async (req, res, next) => {
                 });*/
                 const error = new Error('Incorrect Password');
                 error.statusCode = 401;
-                error.success = false;
                 throw error;
             }
         }
@@ -110,7 +109,6 @@ exports.loginUser = async (req, res, next) => {
             });*/
             const error = new Error('Email ID does not exist');
             error.statusCode = 404;
-            error.success = false;
             throw error;
         }
     }
@@ -121,9 +119,24 @@ exports.loginUser = async (req, res, next) => {
        if(err.errors && err.errors.length > 0) {
             if(err.errors[0].type === 'Validation error') {
             err.statusCode = 400;
-            err.success = false;
             }
        }
         next(err);
     }
 };
+
+exports.verifyLogin = (req, res, next) => {
+    try {
+        const message = 'User is already logged in';
+
+        res.status(200).json({
+        message: message,
+        redirect: 'http://localhost:5500/FRONTEND/components/Layout/expenses.html',
+        success: true
+        });
+    }
+    catch(err) {
+        console.log(err);
+        next(err);
+    }
+}

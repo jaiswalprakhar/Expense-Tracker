@@ -93,7 +93,7 @@ exports.getUserLeaderBoard = async (req, res, next) => {
             throw error;
         }
 
-        console.log(leaderBoardOfUsers);
+        //console.log(leaderBoardOfUsers);
         res.status(200).json(leaderBoardOfUsers);
     } 
     catch (err) {

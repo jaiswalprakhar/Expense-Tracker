@@ -16,7 +16,7 @@ exports.purchasePremium = async (req, res) => {
                 throw new Error(JSON.stringify(err));
             }
             req.user.createOrder({ orderid: order.id, status: 'PENDING'}).then(() => {
-                return res.status(201).json({ order, key_id: rzp.key_id });
+                return res.status(201).json({ order, key_id: rzp.key_id, success: true });
             })
             .catch(err => {
                 throw new Error(err)
@@ -24,7 +24,7 @@ exports.purchasePremium = async (req, res) => {
         })
     } catch(err) {
         console.log(err);
-        res.status(403).json({ message: 'Something went wrong', err: err });
+        res.status(403).json({ message: 'Something went wrong', err: err, success: false });
     }
 }
 
@@ -76,7 +76,6 @@ exports.updateTransactionStatus = async (req, res, next) => {
             //return res.status(404).json({ success: false, message: "Order not found" });
             const error = new Error('Order not found');
             error.statusCode = 404;
-	        error.success = false;
             throw error;
         }
         if(status === "SUCCESS")
@@ -101,7 +100,6 @@ exports.updateTransactionStatus = async (req, res, next) => {
             const orderStatusUpdated = await order.update({ paymentid: payment_id, status: 'FAILED' });
             if(!orderStatusUpdated) {
                 const error = new Error('Order not updated, SOmething went wrong');
-                error.success = false;
                 throw error;
             }
             return res.status(403).json({success: false, message: "Transaction Failed"});

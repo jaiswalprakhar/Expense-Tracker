@@ -11,6 +11,8 @@ const uploadToS3 = (data, fileName) => {
             Bucket: process.env.BUCKET_NAME,
             Key: fileName,
             Body: data,
+            ContentType: 'application/pdf',
+            ContentDisposition: 'attachment',
             ACL: 'public-read'
         }
 

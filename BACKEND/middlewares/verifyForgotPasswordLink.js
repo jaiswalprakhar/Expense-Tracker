@@ -7,7 +7,7 @@ const authenticatePasswordLink = async (req, res, next) => {
         const forgotPasswordUUID = await ForgotPassword.findOne({ where: { id: uuid } });
 
         if(!forgotPasswordUUID || !forgotPasswordUUID.isActive || new Date() > new Date(forgotPasswordUUID.expiresBy)) {
-            return res.status(400).json({ message: 'Invalid link or Reset link has expired' });
+            return res.status(400).json({ message: 'Invalid link or Reset link has expired', success: false });
         }
 
         console.log('Link is valid, please update your password now');

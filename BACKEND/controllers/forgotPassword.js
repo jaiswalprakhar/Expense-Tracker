@@ -22,7 +22,6 @@ exports.forgotPassword = async (req, res, next) => {
             //return res.status(404).json({ message: 'User not found' });
             const error = new Error('User not found');
             error.statusCode = 404;
-	        error.success = false;
             throw error;
         }
         req.user = user;
@@ -54,7 +53,6 @@ exports.forgotPassword = async (req, res, next) => {
             //return res.status(403).json({ message: 'ForgotPasswordRequest is not created' });
             const error = new Error('Unable to create Reset Link');
             error.statusCode = 403;
-	        error.success = false;
             throw error;
         }
         
@@ -86,7 +84,6 @@ exports.updatePassword = async (req, res, next) => {
             //throw new Error('Password should be 8 to 10 characters long');
             const error = new Error('Password should be 8 to 15 characters long');
             error.statusCode = 400;
-            error.success = false;
             throw error;
         }
         const { uuid } = req.query;
@@ -100,7 +97,6 @@ exports.updatePassword = async (req, res, next) => {
         if(!forgotPasswordRequest)  {
             const error = new Error('change password link is incorrect');
             error.statusCode = 404;
-            error.success = false;
             throw error;
         }
 
@@ -110,7 +106,6 @@ exports.updatePassword = async (req, res, next) => {
         if(!user) {
             const error = new Error('Email ID not found');
             error.statusCode = 404;
-            error.success = false;
             throw error;
         }
 
@@ -133,7 +128,10 @@ exports.updatePassword = async (req, res, next) => {
 
         await t.commit();
 
-        res.status(200).json({ message: 'Password Updated, now go to login page' });
+        res.status(200).json({ 
+            message: 'Password Updated, now go to login page',
+            success: true
+         });
     }
     catch (err) {
         console.log(err);

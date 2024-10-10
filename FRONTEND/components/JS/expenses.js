@@ -70,20 +70,100 @@ const leaderBoard = () => {
     premiumBtnParent.innerHTML += childNode;
 }
 
+let originalLeaderBoardBtn = null;
+const expenseBtn = () =>{
+    const showExpenseBtn = document.createElement('button');
+    showExpenseBtn.type = 'button';
+    showExpenseBtn.className = 'btn btn-sm btn-success';
+    showExpenseBtn.id = 'showExpensesBtn';
+    showExpenseBtn.textContent = 'Show Expenses';
+    showExpenseBtn.onclick = () => { 
+        leaderBoardBtn();
+    }
+
+    const showLeaderBoardBtn = document.getElementById('showLeaderBoardBtn');
+    if (!originalLeaderBoardBtn && showLeaderBoardBtn) {
+        originalLeaderBoardBtn = showLeaderBoardBtn.cloneNode(true); // Clone the original button
+    }
+    const parentDiv = showLeaderBoardBtn.parentNode;
+
+    if(showLeaderBoardBtn)  {
+        parentDiv.replaceChild(showExpenseBtn, showLeaderBoardBtn);
+    }
+}
+
+const showLogOutBtn = () => {
+    const logOutBtn = document.createElement('a');
+    logOutBtn.className = 'btn btn-light text-light';
+    logOutBtn.role = 'button';
+    logOutBtn.id = 'logOutBtn';
+    logOutBtn.textContent = 'Log Out';
+    logOutBtn.onclick = () => { 
+        logOut();
+        logOutBtn.href = "http://localhost:5500/FRONTEND/components/Layout/login.html";
+    }
+
+    const loginBtn = document.getElementById('loginBtn');
+    const parentDiv = loginBtn.parentNode;
+
+    parentDiv.replaceChild(logOutBtn, loginBtn);
+}
+
+const logOut = () => {
+    const token = localStorage.getItem('token');
+    if(!token) {
+        showToastResult("User is already logged Out");
+        return;
+    }
+
+    const tokenDelete = localStorage.removeItem("token");
+    showToastResult("User sucessfully logged Out");
+}
+
+const leaderBoardBtn = () => {
+    leaderBoardList.style.display = "none";
+    downloadedFileList.style.display = "block";
+    expenseList.style.display = "block";
+    getExpenses(1);
+
+    const showExpenseBtn = document.getElementById('showExpensesBtn');
+    const parentDiv = showExpenseBtn.parentNode;
+
+    if(showExpenseBtn && originalLeaderBoardBtn)  {
+        parentDiv.replaceChild(originalLeaderBoardBtn, showExpenseBtn);
+        originalLeaderBoardBtn = null;
+    }
+}
+
 window.downloadExpenseFile = () => {
     const token = localStorage.getItem('token');
+    showToastResult("File will be downloaded in few seconds");
     axios.get('http://localhost:3000/expense/download', { headers: { "Authorization": token } })
     .then((response) => {
         if(response.status === 200) {
+            // Open the file in a new tab using window.open
+            //window.open(response.data.downloadedFileUrl, '_blank', 'noopener,noreferrer');
+
+            //This anchor will download the file-
             let a = document.createElement("a");
             a.href = response.data.downloadedFileUrl;
-            a.download = 'myexpense.csv';
+            a.download = 'myexpense.pdf';//'myexpense.csv'; 
             a.click();
-            
+
+            //This anchor will open the file-
+            /*let openAnchor = document.createElement("a");
+            openAnchor.href = response.data.downloadedFileUrl;
+            openAnchor.target = "_blank";
+            openAnchor.rel = "noopener noreferrer"; // Security improvement
+            openAnchor.click();*/
+
             showDownloadedFiles(response.data);
             leaderBoardList.style.display = "none";
             expenseList.style.display = "block";
             downloadedFileList.style.display = "block";
+            showToastResult(response.data.message);
+        }
+        else if(response.status === 204) {
             showToastResult(response.data.message);
         }
         else  {
@@ -112,6 +192,7 @@ window.showLeaderBoard = async () => {
         userLeaderBoardArray.data.forEach((userDetails) => {
             showLeaderBoardData(userDetails);
         })
+        expenseBtn();
     }
     catch(err) {
         console.log(err);
@@ -220,7 +301,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (window.location.pathname === '/FRONTEND/components/Layout/expenses.html') {
         const token = localStorage.getItem('token');
         const objUrlParams = new URLSearchParams(window.location.search);
-        const page = objUrlParams.get("page") || 1;
+        const page = objUrlParams.get("page") || 1;        
 
         let listRange = localStorage.getItem('listRange');
         if(!listRange)  {
@@ -235,6 +316,8 @@ window.addEventListener("DOMContentLoaded", () => {
         axios.get(`http://localhost:3000/expense/get-expense?page=${page}&range=${listRange}`, { headers: {"Authorization": token} })
         .then((response) => {
             //console.log(response);
+            showLogOutBtn();
+            
             const decodedToken = parseJwt(token);
             //console.log(decodedToken);
             const isPremiumUser = decodedToken.isPremiumUser;
@@ -325,7 +408,7 @@ const showExpenses = (expenses) => {
     expenses.forEach((expense) => {
         const childNode = `<tr id = ${expense.id} class="text-center active-row">
                         <td>${expense.amount}</td>
-                        <td>${expense.description}</td>
+                        <td style="word-wrap: break-word; white-space: normal;">${expense.description}</td>
                         <td>${expense.category}</td>
                         <td><button class="btn btn-success m-1" onclick = deleteExpense('${expense.id}') style="background-color: #009879"> Delete </button>
                         <button class="btn btn-success m-1" onclick = getEditExpense('${expense.id}') style="background-color: gray"> Edit </button></td>
